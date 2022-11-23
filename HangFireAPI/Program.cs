@@ -1,7 +1,11 @@
 using Hangfire;
-using Hangfire.MemoryStorage;
+using Hangfire.Storage.SQLite;
+using HangFireAPI.Service;
+using HangfireBasicAuthenticationFilter;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<IServiceManagement, ServiceManagement>();
 
 // Add services to the container.
 
@@ -10,10 +14,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddHangfire(opt =>
-{
-    opt.UseMemoryStorage();
-});
+builder.Services.AddHangfire(configuration => configuration
+            //UseSimpleAssemblyNameTypeSerializer()
+            //.UseRecommendedSerializerSettings()
+            .UseSQLiteStorage(builder.Configuration.GetConnectionString("DefautConnection")));
+
 
 builder.Services.AddHangfireServer();
 
@@ -26,16 +31,27 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHangfireDashboard();
-BackgroundJob.Enqueue(() => Console.WriteLine("Bem vindo ao HingFire"));
+app.UseHangfireDashboard("/hangfire", new DashboardOptions()
+{
+    DashboardTitle = "Hangfire Dashboard",
+    Authorization = new[]{
+    new HangfireCustomBasicAuthenticationFilter{
+        User = builder.Configuration.GetSection("HangfireCredentials:UserName").Value,
+        Pass = builder.Configuration.GetSection("HangfireCredentials:Password").Value
+    } }
+});
+app.MapHangfireDashboard();
 
-RecurringJob.AddOrUpdate(() => Console.WriteLine("Recurring Job"), Cron.Hourly);
+RecurringJob.AddOrUpdate<IServiceManagement>(x => x.SyncRecords(), "0 * * ? * *");
 
-BackgroundJob.Schedule(() => Console.WriteLine("Delayed Job"),
-    TimeSpan.FromDays(2));
+//BackgroundJob.Enqueue(() => Console.WriteLine("Bem vindo ao HingFire"));
 
-string jobId = BackgroundJob.Enqueue(() => Console.WriteLine("Tarefa pai"));
-BackgroundJob.ContinueJobWith(jobId, () => Console.WriteLine("Tarefa filha"));
+//RecurringJob.AddOrUpdate(() => Console.WriteLine("Recurring Job"), Cron.Hourly);
+
+//BackgroundJob.Schedule(() => Console.WriteLine("Delayed Job"),TimeSpan.FromDays(2));
+
+//string jobId = BackgroundJob.Enqueue(() => Console.WriteLine("Tarefa pai"));
+//BackgroundJob.ContinueJobWith(jobId, () => Console.WriteLine("Tarefa filha"));
 
 app.UseAuthorization();
 

@@ -44,9 +44,21 @@
               "target": "Package",
               "version": "[1.7.32, )"
             },
+            "Hangfire.Core": {
+              "target": "Package",
+              "version": "[1.7.32, )"
+            },
+            "Hangfire.Dashboard.Basic.Authentication": {
+              "target": "Package",
+              "version": "[5.0.0, )"
+            },
             "Hangfire.MemoryStorage": {
               "target": "Package",
               "version": "[1.7.0, )"
+            },
+            "Hangfire.Storage.SQLite": {
+              "target": "Package",
+              "version": "[0.3.2, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
